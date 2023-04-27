@@ -94,6 +94,7 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	l, err := u.location(f)
 	if err != nil {
 		http.Error(w, Err("invalid file name %w", err).Error(), http.StatusBadRequest)
+		return
 	}
 
 	if err = u.storage.Write(l, f); err != nil {
