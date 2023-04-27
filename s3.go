@@ -12,7 +12,6 @@ import (
 
 type s3 struct {
 	bucket     string
-	region     string
 	context    context.Context
 	connection *minio.Client
 }
@@ -32,11 +31,13 @@ func newS3(u domain.URL) (*s3, error) {
 	}
 	if c, err = minio.New(u.Host, &minio.Options{
 		Creds:  credentials.NewStaticV4(u.Username, u.Password, ""),
-		Secure: true}); err != nil {
+		Secure: true,
+		Region: u.Query.Get("region"),
+	}); err != nil {
 		return nil, Err("%w", err)
 	}
 
-	return &s3{bucket: u.Path[0], region: u.Query.Get("reqion"), connection: c, context: context.TODO()}, nil
+	return &s3{bucket: u.Path[0], connection: c, context: context.TODO()}, nil
 }
 
 func (c *s3) Write(l Location, from io.Reader) error {
