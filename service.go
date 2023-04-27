@@ -21,12 +21,8 @@ func NewService(url string) (*Service, error) {
 	return NewServiceFromStorage(e), nil
 }
 
-func (s *Service) Uploader(filepath string, size int64, media ...string) (*Uploader, error) {
-	f, err := NewLocation(filepath)
-	if err != nil {
-		return nil, err
-	}
-	return NewUploader(s.s, f, size, media...), nil
+func (s *Service) Uploader(filepath string) *Uploader {
+	return NewUploader(s.s).Filename(filepath)
 }
 
 func (s *Service) Downloader(filepath string) (*Downloader, error) {
