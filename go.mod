@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/minio/minio-go/v7 v7.0.52
-	github.com/sokool/domain v0.0.0-20230424094150-2e57e844fb9f
+	github.com/sokool/domain v0.0.0-20230428074946-c6192f423b7d
 )
 
 require (

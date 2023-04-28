@@ -2,7 +2,6 @@ package files_test
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 
 	"github.com/sokool/files"
@@ -26,7 +25,6 @@ func TestService_ReadWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(s.Files("?!"))
 	b := "hello word"
 	b1 := bytes.NewBufferString(b)
 	if err = s.Write("/test/file", b1); err != nil {
