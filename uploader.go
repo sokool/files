@@ -8,12 +8,13 @@ import (
 )
 
 type Uploader struct {
-	filepath  string
+	filespath string
 	storage   Storage
 	extension bool
 	size      int64
 	key       string
 	media     map[string]bool
+	response  []string
 }
 
 func NewUploader(s Storage) *Uploader {
@@ -41,8 +42,13 @@ func (u *Uploader) AllowedMedia(types ...string) *Uploader {
 	return u
 }
 
-func (u *Uploader) Filename(filepath string) *Uploader {
-	u.filepath = filepath
+func (u *Uploader) FilesPath(s string) *Uploader {
+	u.filespath = s
+	return u
+}
+
+func (u *Uploader) MetaResponse(names ...string) *Uploader {
+	u.response = names
 	return u
 }
 
@@ -97,25 +103,24 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = u.storage.Write(l, f); err != nil {
+	m := make(Meta)
+	if err = u.storage.Write(l, f, m); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	m.Filter(u.response).WriteTo(w)
 }
 
 func (u *Uploader) location(r io.Reader) (Location, error) {
 	var err error
 	var l Location
-	if u.filepath == "" {
-		var d domain.ID
-		if err = domain.NewID(&d); err != nil {
-			return l, err
-		}
-		u.filepath = d.String()
+	var d domain.ID
+	if err = domain.NewID(&d); err != nil {
+		return l, err
 	}
-
 	if u.extension {
 		//mime.ExtensionsByType(http.DetectContentType(fileBytes))
 	}
-	return NewLocation(u.filepath)
+
+	return NewLocation(u.filespath + "/" + d.String())
 }

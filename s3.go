@@ -53,7 +53,7 @@ func (c *s3) Write(l Location, from io.Reader, m ...Meta) error {
 		return Err("%w", err)
 	}
 	if m[0] != nil {
-		m[0]["location"] = r.Location
+		m[0]["Location"] = r.Location
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func (c *s3) Read(l Location, to io.Writer, m ...Meta) error {
 	if err != nil {
 		return Err("%w", err)
 	}
-	if err = m[0].merge(s.UserMetadata); err != nil {
+	if err = m[0].Merge(s.UserMetadata); err != nil {
 		return Err("merging metadata failed %w", err)
 	}
 	return nil
