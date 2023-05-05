@@ -12,12 +12,13 @@ import (
 
 type s3 struct {
 	bucket     string
+	dir        Location
 	context    context.Context
 	connection *minio.Client
 }
 
 func newS3(u domain.URL) (*s3, error) {
-	var c *minio.Client
+	var s = s3{context: context.TODO(), dir: u.Path.Trim(1)}
 	var err error
 
 	if u.Schema != "s3" {
@@ -26,40 +27,61 @@ func newS3(u domain.URL) (*s3, error) {
 	if u.Host == "" {
 		return nil, Err("s3 hostname required")
 	}
-	if len(u.Path) == 0 {
-		return nil, Err("bucket name required in first element of url path")
+	if s.bucket = u.Path.Trim(0, 1).Replace("/", ""); u.Path.IsZero() {
+		return nil, Err("s3 bucket name required in first element of url path")
 	}
-	if c, err = minio.New(u.Host, &minio.Options{
+
+	if s.connection, err = minio.New(u.Host, &minio.Options{
 		Creds:  credentials.NewStaticV4(u.Username, u.Password, ""),
 		Secure: true,
 		Region: u.Query.Get("region"),
 	}); err != nil {
-		return nil, Err("%w", err)
+		return nil, Err("can not establish s3 connection %w", err)
 	}
-
-	return &s3{bucket: u.Path[0], connection: c, context: context.TODO()}, nil
+	return &s, nil
 }
 
-func (c *s3) Write(l Location, from io.Reader) error {
-	if _, err := c.connection.PutObject(c.context, c.bucket, l.Cut(1), from, -1, minio.PutObjectOptions{}); err != nil {
+func (c *s3) Write(l Location, from io.Reader, m ...Meta) error {
+	if len(m) == 0 {
+		m = append(m, nil)
+	}
+	p := c.dir.Append(l).Replace("/", "")
+	r, err := c.connection.PutObject(c.context, c.bucket, p, from, -1, minio.PutObjectOptions{
+		UserMetadata: m[0],
+	})
+	if err != nil {
 		return Err("%w", err)
+	}
+	if m[0] != nil {
+		m[0]["location"] = r.Location
 	}
 	return nil
 }
 
-func (c *s3) Read(l Location, to io.Writer) error {
-	o, err := c.connection.GetObject(c.context, c.bucket, l.Cut(1), minio.GetObjectOptions{})
+func (c *s3) Read(l Location, to io.Writer, m ...Meta) error {
+	p := c.dir.Append(l).Replace("/", "")
+	o, err := c.connection.GetObject(c.context, c.bucket, p, minio.GetObjectOptions{})
 	if err != nil {
 		return Err("%w", err)
 	}
 	if _, err = io.Copy(to, o); err != nil {
 		return Err("%w", err)
 	}
+	if len(m) == 0 || m[0] == nil {
+		return nil
+	}
+	s, err := o.Stat()
+	if err != nil {
+		return Err("%w", err)
+	}
+	if err = m[0].merge(s.UserMetadata); err != nil {
+		return Err("merging metadata failed %w", err)
+	}
 	return nil
 }
 
 func (c *s3) Files(l Location, recursive ...bool) ([]string, error) {
-	p := l.Cut(1)
+	p := l.Replace("/", "")
 	o := c.connection.ListObjects(c.context, c.bucket, minio.ListObjectsOptions{
 		WithVersions: true,
 		WithMetadata: true,

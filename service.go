@@ -33,20 +33,20 @@ func (s *Service) Downloader(filepath string) (*Downloader, error) {
 	return NewDownloader(s.s, f), nil
 }
 
-func (s *Service) Read(filepath string, to io.Writer) error {
+func (s *Service) Read(filepath string, to io.Writer, m ...Meta) error {
 	f, err := NewLocation(filepath)
 	if err != nil {
 		return err
 	}
-	return s.s.Read(f, to)
+	return s.s.Read(f, to, m...)
 }
 
-func (s *Service) Write(filepath string, from io.Reader) error {
+func (s *Service) Write(filepath string, from io.Reader, m ...Meta) error {
 	f, err := NewLocation(filepath)
 	if err != nil {
 		return err
 	}
-	return s.s.Write(f, from)
+	return s.s.Write(f, from, m...)
 }
 
 func (s *Service) Files(dir string) ([]string, error) {

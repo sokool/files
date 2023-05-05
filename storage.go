@@ -7,8 +7,8 @@ import (
 )
 
 type Storage interface {
-	Write(Location, io.Reader) error
-	Read(Location, io.Writer) error
+	Write(Location, io.Reader, ...Meta) error
+	Read(Location, io.Writer, ...Meta) error
 	Files(d Location, recursive ...bool) ([]string, error)
 }
 

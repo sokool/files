@@ -12,7 +12,7 @@ func NewDownloader(s Storage, l Location) *Downloader {
 }
 
 func (d *Downloader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := d.storage.Read(d.file, w); err != nil {
+	if err := d.storage.Read(d.file, nil, nil); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
