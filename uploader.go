@@ -123,15 +123,18 @@ func (u *Uploader) file(r io.Reader) (Location, io.Reader, error) {
 		return l, r, err
 	}
 	if f = u.filespath + "/" + d.String(); u.extension {
-		b, err := io.ReadAll(r)
-		r = bytes.NewBuffer(b)
-		e, err := mime.ExtensionsByType(http.DetectContentType(b))
-		if err != nil {
+		var b []byte
+		var e []string
+		if b, err = io.ReadAll(r); err != nil {
 			return l, r, err
 		}
-		if len(e) != 0 {
+		if e, err = mime.ExtensionsByType(http.DetectContentType(b)); err != nil {
+			return l, r, err
+		}
+		if len(e) == 1 {
 			f = fmt.Sprintf("%s%s", f, e[0])
 		}
+		r = bytes.NewBuffer(b)
 	}
 
 	l, err = NewLocation(f)
