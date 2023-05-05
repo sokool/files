@@ -49,14 +49,7 @@ func (m Meta) Size() int {
 }
 
 func (m Meta) WriteTo(w io.Writer) (int64, error) {
-	var v any = m
-	if m.Size() == 1 {
-		for n := range m {
-			v = m[n]
-			break
-		}
-	}
-	b, err := json.Marshal(v)
+	b, err := json.Marshal(m)
 	if err != nil {
 		return 0, err
 	}
