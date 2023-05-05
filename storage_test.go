@@ -39,3 +39,19 @@ func TestService_ReadWrite(t *testing.T) {
 	}
 
 }
+
+func TestMeta_Filter(t *testing.T) {
+	m := files.Meta{"One": "1", "Two": "2", "Three": "3"}
+	n := files.Meta{"One": "jeden", "Two": "dwa"}
+	o := m.Map(n)
+	b := bytes.Buffer{}
+	if o["jeden"] != "1" || o["dwa"] != "2" || len(o) != 2 {
+		t.Fatal()
+	}
+	if _, err := o.WriteTo(&b); err != nil {
+		t.Fatal(err)
+	}
+	if b.String() != `{"dwa":"2","jeden":"1"}` {
+		t.Fatal()
+	}
+}

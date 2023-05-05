@@ -25,15 +25,19 @@ func (m Meta) Merge(n map[string]string) error {
 	return nil
 }
 
-func (m Meta) Filter(s []string) Meta {
+func (m Meta) Map(s Meta) Meta {
 	if len(s) == 0 {
 		return m
 	}
 	n := make(Meta)
-	for _, mn := range m {
-		for _, sn := range s {
-			if sn == mn {
-				n[sn] = m[mn]
+	for mk := range m {
+		for sk, sv := range s {
+			if sk == mk {
+				if sv == "" {
+					sv = mk
+				}
+				n[sv] = m[mk]
+				break
 			}
 		}
 	}

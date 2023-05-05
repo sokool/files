@@ -14,7 +14,7 @@ type Uploader struct {
 	size      int64
 	key       string
 	media     map[string]bool
-	response  []string
+	response  Meta
 }
 
 func NewUploader(s Storage) *Uploader {
@@ -47,8 +47,8 @@ func (u *Uploader) FilesPath(s string) *Uploader {
 	return u
 }
 
-func (u *Uploader) MetaResponse(names ...string) *Uploader {
-	u.response = names
+func (u *Uploader) Response(mapping Meta) *Uploader {
+	u.response = mapping
 	return u
 }
 
@@ -108,7 +108,7 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	m.Filter(u.response).WriteTo(w)
+	m.Map(u.response).WriteTo(w)
 }
 
 func (u *Uploader) location(r io.Reader) (Location, error) {
