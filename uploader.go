@@ -1,7 +1,10 @@
 package files
 
 import (
+	"bytes"
+	"fmt"
 	"io"
+	"mime"
 	"net/http"
 
 	"github.com/sokool/domain"
@@ -75,13 +78,13 @@ func (u *Uploader) AutoExtension(b bool) *Uploader {
 }
 
 func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	f, h, err := r.FormFile(u.key)
+	fh, h, err := r.FormFile(u.key)
 	if err != nil {
 		err = Err("src multipart file not found")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	defer f.Close()
+	defer fh.Close()
 
 	if len(u.media) != 0 {
 		t := h.Header.Get("content-type")
@@ -97,7 +100,7 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l, err := u.location(f)
+	l, f, err := u.file(fh)
 	if err != nil {
 		http.Error(w, Err("invalid file name %w", err).Error(), http.StatusBadRequest)
 		return
@@ -111,16 +114,24 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.Map(u.response).WriteTo(w)
 }
 
-func (u *Uploader) location(r io.Reader) (Location, error) {
+func (u *Uploader) file(r io.Reader) (Location, io.Reader, error) {
 	var err error
 	var l Location
 	var d domain.ID
+	var f string
 	if err = domain.NewID(&d); err != nil {
-		return l, err
+		return l, r, err
 	}
-	if u.extension {
-		//mime.ExtensionsByType(http.DetectContentType(fileBytes))
+	if f = u.filespath + "/" + d.String(); u.extension {
+		w := bytes.Buffer{}
+		r = io.TeeReader(r, &w)
+		e, err := mime.ExtensionsByType(http.DetectContentType(w.Bytes()))
+		if err != nil {
+			return l, r, err
+		}
+		f = fmt.Sprintf("%s.%s", f, e)
 	}
 
-	return NewLocation(u.filespath + "/" + d.String())
+	l, err = NewLocation(f)
+	return l, r, err
 }
