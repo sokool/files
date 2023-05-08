@@ -2,6 +2,7 @@ package files
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime"
@@ -17,7 +18,8 @@ type Uploader struct {
 	size      int64
 	key       string
 	media     map[string]bool
-	response  Meta
+	request   Meta
+	response  func(Location, Meta) any
 }
 
 func NewUploader(s Storage) *Uploader {
@@ -50,8 +52,13 @@ func (u *Uploader) FilesPath(s string) *Uploader {
 	return u
 }
 
-func (u *Uploader) Response(mapping Meta) *Uploader {
-	u.response = mapping
+func (u *Uploader) Request(m Meta) *Uploader {
+	u.request = m
+	return u
+}
+
+func (u *Uploader) Response(f func(l Location, m Meta) any) *Uploader {
+	u.response = f
 	return u
 }
 
@@ -107,11 +114,19 @@ func (u *Uploader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := make(Meta)
+	if u.request != nil {
+		m = u.request
+	}
 	if err = u.storage.Write(l, f, m); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	m.Map(u.response).WriteTo(w)
+	if u.response != nil {
+		if err = json.NewEncoder(w).Encode(u.response(l, m)); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 func (u *Uploader) file(r io.Reader) (Location, io.Reader, error) {
@@ -128,6 +143,7 @@ func (u *Uploader) file(r io.Reader) (Location, io.Reader, error) {
 		if b, err = io.ReadAll(r); err != nil {
 			return l, r, err
 		}
+
 		if e, err = mime.ExtensionsByType(http.DetectContentType(b)); err != nil {
 			return l, r, err
 		}
