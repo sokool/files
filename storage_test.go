@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/sokool/files"
+	"git2.gamingtec.com/sportsbook-digitain/kit/files"
 )
 
 func TestNewStorage(t *testing.T) {
